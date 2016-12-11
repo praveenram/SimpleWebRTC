@@ -146,6 +146,8 @@ Peer.prototype.handleMessage = function (message) {
                 mLine.iceTransport.addRemoteCandidate({});
             }
         });
+    } else {
+        this.parent.emit(message.type, message.payload);
     }
 };
 
