@@ -229,7 +229,9 @@ function SimpleWebRTC(opts) {
         });
     });
     this.webrtc.on('localScreenStopped', function (stream) {
-        self.stopScreenShare();
+        if (self.getLocalScreen()) {
+            self.stopScreenShare();
+        }
         /*
         self.connection.emit('unshareScreen');
         self.webrtc.peers.forEach(function (peer) {
@@ -369,7 +371,7 @@ SimpleWebRTC.prototype.getEl = function (idOrEl) {
 
 SimpleWebRTC.prototype.startLocalVideo = function () {
     var self = this;
-    this.webrtc.startLocalMedia(this.config.media, function (err, stream) {
+    this.webrtc.start(this.config.media, function (err, stream) {
         if (err) {
             self.emit('localMediaError', err);
         } else {
@@ -379,7 +381,7 @@ SimpleWebRTC.prototype.startLocalVideo = function () {
 };
 
 SimpleWebRTC.prototype.stopLocalVideo = function () {
-    this.webrtc.stopLocalMedia();
+    this.webrtc.stop();
 };
 
 // this accepts either element ID or element
@@ -409,14 +411,13 @@ SimpleWebRTC.prototype.shareScreen = function (cb) {
 };
 
 SimpleWebRTC.prototype.getLocalScreen = function () {
-    return this.webrtc.localScreen;
+    return this.webrtc.localScreens && this.webrtc.localScreens[0];
 };
 
 SimpleWebRTC.prototype.stopScreenShare = function () {
     this.connection.emit('unshareScreen');
     var videoEl = document.getElementById('localScreen');
     var container = this.getRemoteVideoContainer();
-    var stream = this.getLocalScreen();
 
     if (this.config.autoRemoveVideos && container && videoEl) {
         container.removeChild(videoEl);
@@ -424,16 +425,17 @@ SimpleWebRTC.prototype.stopScreenShare = function () {
 
     // a hack to emit the event the removes the video
     // element that we want
-    if (videoEl) this.emit('videoRemoved', videoEl);
-    if (stream) {
-        stream.getTracks().forEach(function (track) { track.stop(); });
+    if (videoEl) {
+        this.emit('videoRemoved', videoEl);
+    }
+    if (this.getLocalScreen()) {
+        this.webrtc.stopScreenShare();
     }
     this.webrtc.peers.forEach(function (peer) {
         if (peer.broadcaster) {
             peer.end();
         }
     });
-    //delete this.webrtc.localScreen;
 };
 
 SimpleWebRTC.prototype.testReadiness = function () {
