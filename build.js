@@ -10,6 +10,9 @@ bundle.bundle(function (err, source) {
     console.error(err);
   }
   fs.writeFileSync('out/simplewebrtc.bundle.js', source);
+  fs.writeFile('out/latest-v2.js', uglify.minify(source.toString('utf8'), {fromString: true}).code, function (err) {
+    if (err) throw err;
+  });
   const adapter = fs.readFileSync('node_modules/webrtc-adapter/out/adapter.js').toString();
   fs.writeFileSync('out/simplewebrtc-with-adapter.bundle.js', `${adapter}\n${source}`);
 });
